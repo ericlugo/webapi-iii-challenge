@@ -1,16 +1,87 @@
-/*
-  validateUserId()
-    validateUserId validates the user id on every request that expects a user id parameter
-    if the id parameter is valid, store that user object as req.user
-    if the id parameter does not match any user id in the database, cancel the request and respond with status 400`and { message: "invalid user id" }
+const userDb = require(`../data/userDb.js`);
+const postDb = require(`../data/postDb.js`);
+const validation_exports = (module.exports = {});
 
-  validateUser()
-    validateUser validates the body on a request to create a new user
-    if the request body is missing, cancel the request and respond with status 400 and { message: "missing user data" }
-    if the request body is missing the required name field, cancel the request and respond with status 400 and { message: "missing required name field" }
+validation_exports.validateUserId = async function(request, response, next) {
+  try {
+    const id = request.params.id;
+    const user = await userDb.getById(id);
 
-  validatePost()
-    validatePost validates the body on a request to create a new post
-    if the request body is missing, cancel the request and respond with status 400 and { message: "missing post data" }
-    if the request body is missing the required `text` field, cancel the request and respond with status 400 and { message: "missing required text field" }
-*/
+    user
+      ? ((request.user = id), next())
+      : response.status(400).json({
+          success: false,
+          message: `invalid user id`,
+        });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      message: `fatal error attempting to validate user id`,
+    });
+  }
+};
+
+validation_exports.validateUser = function(request, response, next) {
+  try {
+    const newUser = { ...request.body };
+
+    newUser
+      ? newUser.name
+        ? next()
+        : response.status(400).json({
+            success: false,
+            message: `missing required name field`,
+          })
+      : response.status(400).json({
+          success: false,
+          message: `missing user data`,
+        });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      message: `fatal error attempting to validate new user data`,
+    });
+  }
+};
+
+validation_exports.validatePost = function(request, response, next) {
+  try {
+    const newPost = { ...request.body };
+
+    newPost
+      ? newPost.text
+        ? next()
+        : response.status(400).json({
+            success: false,
+            message: `missing required text field`,
+          })
+      : response.status(400).json({
+          success: false,
+          message: `missing post data`,
+        });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      message: `fatal error attempting to validate new post data`,
+    });
+  }
+};
+
+validation_exports.validatePostId = async function(request, response, next) {
+  try {
+    const id = request.params.id;
+    const post = await postDb.getById(id);
+
+    post
+      ? ((request.post = id), next())
+      : response.status(400).json({
+          success: false,
+          message: `Invalid Post ID`,
+        });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      message: `Fatal Error. Unable to Validate PostID`,
+    });
+  }
+};
